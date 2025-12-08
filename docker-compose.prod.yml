@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fullstack-mysql-prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
+      MYSQL_DATABASE: users_db
+      MYSQL_USER: $DB_USER
+      MYSQL_PASSWORD: $DB_PASSWORD
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - fullstack-network-prod
+    command: 
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+
+  python-service:
+    image: ${DOCKERHUB_USERNAME}/python-users-service:latest
+    container_name: python-users-service-prod
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_NAME: users_db
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fullstack-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  java-service:
+    image: ${DOCKERHUB_USERNAME}/java-products-service:latest
+    container_name: java-products-service-prod
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_NAME: products_db
+      SPRING_PROFILES_ACTIVE: production
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fullstack-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/products/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    container_name: fullstack-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - python-service
+      - java-service
+    networks:
+      - fullstack-network-prod
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --cleanup
+    networks:
+      - fullstack-network-prod
+
+volumes:
+  mysql_data_prod:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  fullstack-network-prod:
+    driver: bridge

@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fullstack-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: users_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: secure_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: 
+      - --default-authentication-plugin=mysql_native_password
+
+  python-service:
+    build: ./backend/python
+    container_name: python-users-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: mysql
+      DB_USER: app_user
+      DB_PASSWORD: secure_password
+      DB_NAME: users_db
+    depends_on:
+      - mysql
+
+  java-service:
+    build: ./backend/java
+    container_name: java-products-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+  nginx:
+    image: nginx:alpine
+    container_name: fullstack-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - python-service
+      - java-service
+
+volumes:
+  mysql_data:

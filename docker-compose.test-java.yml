@@ -1,0 +1,5 @@
+services:
+  java-service:
+    build: ./backend/java
+    ports:
+      - "8080:8080"

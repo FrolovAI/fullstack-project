@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FullStack Dashboard - Python & Java Services</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .service-card {
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            transition: all 0.3s;
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+        }
+        
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-online {
+            background-color: var(--success-color);
+        }
+        
+        .status-offline {
+            background-color: var(--danger-color);
+        }
+        
+        .status-checking {
+            background-color: var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        .badge-python {
+            background-color: #3776ab;
+            color: white;
+        }
+        
+        .badge-java {
+            background-color: #007396;
+            color: white;
+        }
+        
+        .api-endpoint {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin: 2px 0;
+        }
+        
+        .stats-card {
+            border-left: 4px solid;
+        }
+        
+        .stats-card.python {
+            border-left-color: var(--primary-color);
+        }
+        
+        .stats-card.java {
+            border-left-color: var(--success-color);
+        }
+        
+        .monitoring-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-layer-group me-2"></i>FullStack Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="fas fa-home me-1"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#python-section"><i class="fab fa-python me-1"></i> Python Service</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#java-section"><i class="fab fa-java me-1"></i> Java Service</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#monitoring"><i class="fas fa-chart-line me-1"></i> Monitoring</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Статус системы -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="monitoring-section">
+                    <h4><i class="fas fa-heartbeat me-2"></i>System Status</h4>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <span id="pythonStatus" class="status-indicator status-checking"></span>
+                                <span class="me-3">Python Service</span>
+                                <span id="pythonEndpoint" class="badge bg-light text-dark">localhost:8000</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <span id="javaStatus" class="status-indicator status-checking"></span>
+                                <span class="me-3">Java Service</span>
+                                <span id="javaEndpoint" class="badge bg-light text-dark">localhost:8080</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <span id="dbStatus" class="status-indicator status-checking"></span>
+                                <span class="me-3">MySQL Database</span>
+                                <span class="badge bg-light text-dark">localhost:3306</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-light btn-sm" onclick="checkAllServices()">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="row mb-4" id="monitoring">
+            <div class="col-md-3">
+                <div class="card stats-card python">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h6 class="text-muted">Python Users</h6>
+                                <h4 id="pythonUsersCount">0</h4>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fab fa-python fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card java">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h6 class="text-muted">Java Products</h6>
+                                <h4 id="javaProductsCount">0</h4>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fab fa-java fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h6 class="text-muted">Total Requests</h6>
+                                <h4 id="totalRequests">0</h4>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fas fa-exchange-alt fa-2x text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h6 class="text-muted">Uptime</h6>
+                                <h4 id="uptimeCounter">00:00:00</h4>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fas fa-clock fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основной контент -->
+        <div class="row">
+            <!-- Python Service -->
+            <div class="col-lg-6" id="python-section">
+                <div class="card service-card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5><i class="fab fa-python me-2"></i>Python Users Service (FastAPI)</h5>
+                        <span class="badge bg-light text-dark">REST API</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Форма добавления пользователя -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-user-plus me-2"></i>Add New User</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <input type="text" id="userName" class="form-control" placeholder="Full Name" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="email" id="userEmail" class="form-control" placeholder="Email Address" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" id="userAge" class="form-control" placeholder="Age" min="1" max="120">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary w-100" onclick="addUser()">
+                                        <i class="fas fa-plus me-1"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Управление пользователями -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6><i class="fas fa-users me-2"></i>Users Management</h6>
+                                <div>
+                                    <button class="btn btn-outline-primary btn-sm me-2" onclick="loadUsers()">
+                                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="clearUsersTable()">
+                                        <i class="fas fa-trash me-1"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="usersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Age</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <!-- Users will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- API Endpoints -->
+                        <div>
+                            <h6><i class="fas fa-code me-2"></i>API Endpoints</h6>
+                            <div class="mb-2">
+                                <div class="api-endpoint">GET <span class="text-primary">/users</span></div>
+                                <small class="text-muted">Get all users</small>
+                            </div>
+                            <div class="mb-2">
+                                <div class="api-endpoint">POST <span class="text-success">/users</span></div>
+                                <small class="text-muted">Create new user</small>
+                            </div>
+                            <div class="mb-2">
+                                <div class="api-endpoint">GET <span class="text-primary">/health</span></div>
+                                <small class="text-muted">Health check</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Java Service -->
+            <div class="col-lg-6" id="java-section">
+                <div class="card service-card">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5><i class="fab fa-java me-2"></i>Java Products Service (Spring Boot)</h5>
+                        <span class="badge bg-light text-dark">REST API</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Форма добавления продукта -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-box me-2"></i>Add New Product</h6>
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="text" id="productName" class="form-control" placeholder="Product Name" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" id="productPrice" class="form-control" placeholder="Price" step="0.01" min="0.01" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" id="productStock" class="form-control" placeholder="Stock" min="0" value="10">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-success w-100" onclick="addProduct()">
+                                        <i class="fas fa-plus me-1"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <input type="text" id="productDescription" class="form-control" placeholder="Description (optional)">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <select id="productCategory" class="form-select">
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Clothing">Clothing</option>
+                                        <option value="Books">Books</option>
+                                        <option value="Home">Home & Garden</option>
+                                        <option value="Sports">Sports</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Управление продуктами -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6><i class="fas fa-boxes me-2"></i>Products Management</h6>
+                                <div>
+                                    <button class="btn btn-outline-success btn-sm me-2" onclick="loadProducts()">
+                                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                                    </button>
+                                    <div class="input-group input-group-sm" style="width: 200px;">
+                                        <input type="text" id="searchProduct" class="form-control" placeholder="Search products...">
+                                        <button class="btn btn-outline-secondary" onclick="searchProducts()">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="productsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Name</th>
+                                            <th>Price</th>
+                                            <th>Stock</th>
+                                            <th>Category</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productsTableBody">
+                                        <!-- Products will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- API Endpoints -->
+                        <div>
+                            <h6><i class="fas fa-code me-2"></i>API Endpoints</h6>
+                            <div class="mb-2">
+                                <div class="api-endpoint">GET <span class="text-primary">/api/products</span></div>
+                                <small class="text-muted">Get all products</small>
+                            </div>
+                            <div class="mb-2">
+                                <div class="api-endpoint">POST <span class="text-success">/api/products</span></div>
+                                <small class="text-muted">Create new product</small>
+                            </div>
+                            <div class="mb-2">
+                                <div class="api-endpoint">GET <span class="text-primary">/api/products/health</span></div>
+                                <small class="text-muted">Health check</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Логи -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h6><i class="fas fa-terminal me-2"></i>Activity Log</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="activityLog" style="height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9rem;">
+                            <div class="text-muted">System initialized. Waiting for actions...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для деталей -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Конфигурация
+        const CONFIG = {
+            PYTHON_SERVICE_URL: 'http://localhost:8000',
+            JAVA_SERVICE_URL: 'http://localhost:8080',
+            UPDATE_INTERVAL: 30000, // 30 секунд
+            requestCount: 0,
+            startTime: new Date()
+        };
+
+        // Логирование
+        function logActivity(message, type = 'info') {
+            const logDiv = document.getElementById('activityLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'error' ? 'text-danger' : type === 'success' ? 'text-success' : 'text-info';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `border-bottom py-1 ${typeClass}`;
+            logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${message}`;
+            
+            logDiv.prepend(logEntry);
+            
+            // Ограничиваем количество записей
+            if (logDiv.children.length > 50) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+            
+            // Обновляем счетчик запросов
+            if (type !== 'info') {
+                CONFIG.requestCount++;
+                document.getElementById('totalRequests').textContent = CONFIG.requestCount;
+            }
+        }
+
+        // Обновление времени работы
+        function updateUptime() {
+            const now = new Date();
+            const diff = Math.floor((now - CONFIG.startTime) / 1000);
+            
+            const hours = Math.floor(diff / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (diff % 60).toString().padStart(2, '0');
+            
+            document.getElementById('uptimeCounter').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateUptime, 1000);
+
+        // Проверка статуса сервисов
+        async function checkAllServices() {
+            checkPythonService();
+            checkJavaService();
+            checkDatabaseStatus();
+            loadStats();
+        }
+
+        async function checkPythonService() {
+            const statusDiv = document.getElementById('pythonStatus');
+            try {
+                const response = await fetch(`${CONFIG.PYTHON_SERVICE_URL}/health`, { timeout: 5000 });
+                if (response.ok) {
+                    statusDiv.className = 'status-indicator status-online';
+                    logActivity('Python service: Online', 'success');
+                } else {
+                    statusDiv.className = 'status-indicator status-offline';
+                    logActivity('Python service: Offline', 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status-indicator status-offline';
+                logActivity(`Python service error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkJavaService() {
+            const statusDiv = document.getElementById('javaStatus');
+            try {
+                const response = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products/health`, { timeout: 5000 });
+                if (response.ok) {
+                    statusDiv.className = 'status-indicator status-online';
+                    logActivity('Java service: Online', 'success');
+                } else {
+                    statusDiv.className = 'status-indicator status-offline';
+                    logActivity('Java service: Offline', 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status-indicator status-offline';
+                logActivity(`Java service error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkDatabaseStatus() {
+            const statusDiv = document.getElementById('dbStatus');
+            // Упрощенная проверка - предполагаем что БД работает если сервисы работают
+            const pythonOk = document.getElementById('pythonStatus').className.includes('online');
+            const javaOk = document.getElementById('javaStatus').className.includes('online');
+            
+            if (pythonOk || javaOk) {
+                statusDiv.className = 'status-indicator status-online';
+                logActivity('Database: Online', 'success');
+            } else {
+                statusDiv.className = 'status-indicator status-offline';
+                logActivity('Database: Offline', 'error');
+            }
+        }
+
+        // Загрузка статистики
+        async function loadStats() {
+            try {
+                // Python users count
+                const usersResponse = await fetch(`${CONFIG.PYTHON_SERVICE_URL}/users`);
+                if (usersResponse.ok) {
+                    const users = await usersResponse.json();
+                    document.getElementById('pythonUsersCount').textContent = users.length;
+                }
+                
+                // Java products count
+                const productsResponse = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products`);
+                if (productsResponse.ok) {
+                    const products = await productsResponse.json();
+                    document.getElementById('javaProductsCount').textContent = products.length;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Функции для Python сервиса
+        async function addUser() {
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const age = document.getElementById('userAge').value;
+            
+            if (!name || !email) {
+                alert('Please fill name and email fields');
+                return;
+            }
+            
+            const userData = { name, email };
+            if (age) userData.age = parseInt(age);
+            
+            try {
+                const response = await fetch(`${CONFIG.PYTHON_SERVICE_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    logActivity(`User added: ${user.name} (${user.email})`, 'success');
+                    alert('User added successfully!');
+                    document.getElementById('userName').value = '';
+                    document.getElementById('userEmail').value = '';
+                    document.getElementById('userAge').value = '';
+                    loadUsers();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to add user');
+                }
+            } catch (error) {
+                logActivity(`Error adding user: ${error.message}`, 'error');
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${CONFIG.PYTHON_SERVICE_URL}/users`);
+                const users = await response.json();
+                
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.age || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info me-1" onclick="viewUserDetails(${user.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                logActivity(`Loaded ${users.length} users`, 'success');
+            } catch (error) {
+                logActivity(`Error loading users: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewUserDetails(userId) {
+            try {
+                const response = await fetch(`${CONFIG.PYTHON_SERVICE_URL}/users/${userId}`);
+                const user = await response.json();
+                
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
+                
+                modalTitle.textContent = `User Details: ${user.name}`;
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID:</strong> ${user.id}</p>
+                            <p><strong>Name:</strong> ${user.name}</p>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Age:</strong> ${user.age || 'N/A'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> ${new Date(user.created_at).toLocaleString()}</p>
+                            <p><strong>Service:</strong> Python Users Service</p>
+                            <p><strong>API Endpoint:</strong> <code>/users/${user.id}</code></p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Raw JSON:</h6>
+                        <pre class="bg-light p-3">${JSON.stringify(user, null, 2)}</pre>
+                    </div>
+                `;
+                
+                new bootstrap.Modal(document.getElementById('detailsModal')).show();
+            } catch (error) {
+                logActivity(`Error viewing user: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.PYTHON_SERVICE_URL}/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    logActivity(`User deleted: ID ${userId}`, 'success');
+                    loadUsers();
+                    loadStats();
+                }
+            } catch (error) {
+                logActivity(`Error deleting user: ${error.message}`, 'error');
+            }
+        }
+
+        function clearUsersTable() {
+            document.getElementById('usersTableBody').innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        No users loaded. Click "Refresh" to load users.
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Функции для Java сервиса
+        async function addProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const price = document.getElementById('productPrice').value;
+            const stock = document.getElementById('productStock').value;
+            const description = document.getElementById('productDescription').value.trim();
+            const category = document.getElementById('productCategory').value;
+            
+            if (!name || !price) {
+                alert('Please fill name and price fields');
+                return;
+            }
+            
+            const productData = {
+                name,
+                price: parseFloat(price),
+                stock: parseInt(stock) || 0,
+                description,
+                category
+            };
+            
+            try {
+                const response = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(productData)
+                });
+                
+                if (response.ok) {
+                    const product = await response.json();
+                    logActivity(`Product added: ${product.name} ($${product.price})`, 'success');
+                    alert('Product added successfully!');
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productStock').value = '10';
+                    document.getElementById('productDescription').value = '';
+                    loadProducts();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to add product');
+                }
+            } catch (error) {
+                logActivity(`Error adding product: ${error.message}`, 'error');
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products`);
+                const products = await response.json();
+                
+                const tbody = document.getElementById('productsTableBody');
+                tbody.innerHTML = '';
+                
+                products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product.id}</td>
+                        <td>${product.name}</td>
+                        <td>$${product.price.toFixed(2)}</td>
+                        <td>
+                            <span class="badge ${product.stock > 10 ? 'bg-success' : product.stock > 0 ? 'bg-warning' : 'bg-danger'}">
+                                ${product.stock}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">${product.category}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info me-1" onclick="viewProductDetails(${product.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${product.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                logActivity(`Loaded ${products.length} products`, 'success');
+            } catch (error) {
+                logActivity(`Error loading products: ${error.message}`, 'error');
+            }
+        }
+
+        async function searchProducts() {
+            const keyword = document.getElementById('searchProduct').value.trim();
+            if (!keyword) {
+                loadProducts();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products/search?keyword=${encodeURIComponent(keyword)}`);
+                const products = await response.json();
+                
+                const tbody = document.getElementById('productsTableBody');
+                tbody.innerHTML = '';
+                
+                if (products.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                No products found for "${keyword}"
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    products.forEach(product => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${product.id}</td>
+                            <td>${product.name}</td>
+                            <td>$${product.price.toFixed(2)}</td>
+                            <td>${product.stock}</td>
+                            <td>${product.category}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewProductDetails(${product.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+                
+                logActivity(`Search results for "${keyword}": ${products.length} products`, 'success');
+            } catch (error) {
+                logActivity(`Error searching products: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewProductDetails(productId) {
+            try {
+                const response = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products/${productId}`);
+                const product = await response.json();
+                
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
+                
+                modalTitle.textContent = `Product Details: ${product.name}`;
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID:</strong> ${product.id}</p>
+                            <p><strong>Name:</strong> ${product.name}</p>
+                            <p><strong>Price:</strong> $${product.price.toFixed(2)}</p>
+                            <p><strong>Stock:</strong> ${product.stock} units</p>
+                            <p><strong>Category:</strong> ${product.category}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Description:</strong> ${product.description || 'N/A'}</p>
+                            <p><strong>Created:</strong> ${new Date(product.createdAt).toLocaleString()}</p>
+                            <p><strong>Updated:</strong> ${new Date(product.updatedAt).toLocaleString()}</p>
+                            <p><strong>Service:</strong> Java Products Service</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Raw JSON:</h6>
+                        <pre class="bg-light p-3">${JSON.stringify(product, null, 2)}</pre>
+                    </div>
+                `;
+                
+                new bootstrap.Modal(document.getElementById('detailsModal')).show();
+            } catch (error) {
+                logActivity(`Error viewing product: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.JAVA_SERVICE_URL}/api/products/${productId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    logActivity(`Product deleted: ID ${productId}`, 'success');
+                    loadProducts();
+                    loadStats();
+                }
+            } catch (error) {
+                logActivity(`Error deleting product: ${error.message}`, 'error');
+            }
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            logActivity('Dashboard initialized', 'info');
+            checkAllServices();
+            
+            // Автоматическое обновление
+            setInterval(checkAllServices, CONFIG.UPDATE_INTERVAL);
+            
+            // Загрузка данных при старте
+            setTimeout(() => {
+                loadUsers();
+                loadProducts();
+            }, 1000);
+            
+            // Обработка Enter для поиска
+            document.getElementById('searchProduct').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchProducts();
+            });
+        });
+    </script>
+</body>
+</html>
