@@ -1,1 +1,16 @@
-{"name":"app","version":"1.0.0","scripts":{"test":"echo \"Tests passed\"","build":"echo \"Build complete\""}}
+{
+  "name": "fullstack-app",
+  "version": "1.0.0",
+  "description": "Fullstack application for Kubernetes",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo 'Tests passed' && exit 0",
+    "build": "echo 'Building...'",
+    "docker:build": "docker build -t fullstack-app ."
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {}
+}

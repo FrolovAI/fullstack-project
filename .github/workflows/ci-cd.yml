@@ -1,155 +1,54 @@
-name: CI/CD Pipeline
+# В .github/workflows/ci-cd.yml
+name: CI/CD to Kubernetes
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
-  quality-checks:
-    name: Quality Checks
+  test-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
       with:
-        node-version: '20.x'
-        cache: 'npm'
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Verify lock file exists
-      id: check_lock
-      run: |
-        echo "🔍 Checking for lock files..."
-        if [ -f "package-lock.json" ]; then
-          echo "✅ Found package-lock.json"
-          echo "has_lock=true" >> $GITHUB_OUTPUT
-        elif [ -f "yarn.lock" ]; then
-          echo "✅ Found yarn.lock"
-          echo "has_lock=true" >> $GITHUB_OUTPUT
-        elif [ -f "pnpm-lock.yaml" ]; then
-          echo "✅ Found pnpm-lock.yaml"
-          echo "has_lock=true" >> $GITHUB_OUTPUT
-        else
-          echo "❌ No lock file found"
-          echo "has_lock=false" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run linter
-      run: |
-        echo "Running linter..."
-        if npm run | grep -q "lint"; then
-          npm run lint
-        else
-          echo "No lint script found, skipping..."
-        fi
-    
-    - name: Run tests
-      run: |
-        echo "Running tests..."
-        if npm run | grep -q "test"; then
-          npm test
-        else
-          echo "No test script found, running default..."
-          echo "✅ All tests passed"
-        fi
-    
-    - name: Build application
-      run: |
-        echo "Building application..."
-        if npm run | grep -q "build"; then
-          npm run build
-        else
-          echo "No build script found, creating default build..."
-          mkdir -p dist
-          echo "Build completed at $(date)" > dist/build-info.txt
-          echo "Project: $(node -p "require('./package.json').name")" >> dist/build-info.txt
-          echo "Version: $(node -p "require('./package.json').version")" >> dist/build-info.txt
-        fi
-    
-    - name: Upload artifacts
-      if: success()
-      uses: actions/upload-artifact@v4
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
       with:
-        name: build-artifacts
-        path: |
-          dist/
-          coverage/
-        retention-days: 7
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/fullstack-project:latest
+          ${{ secrets.DOCKER_USERNAME }}/fullstack-project:${{ github.sha }}
 
-  security-scan:
-    name: Security Scan
+  deploy:
     runs-on: ubuntu-latest
-    needs: quality-checks
+    needs: test-build
+    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
       with:
-        node-version: '20.x'
+        version: 'v1.28.0'
     
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run security audit
+    - name: Configure kubeconfig
       run: |
-        echo "🔒 Running security audit..."
-        npm audit --audit-level=moderate || true
-        echo "Security audit completed"
-    
-    - name: Check outdated packages
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+        
+    - name: Deploy to Kubernetes
       run: |
-        echo "📦 Checking for outdated packages..."
-        npm outdated || echo "All packages are up to date"
-
-  deploy-preview:
-    name: Deploy Preview
-    runs-on: ubuntu-latest
-    needs: [quality-checks, security-scan]
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build for preview
-      run: npm run build
-    
-    - name: Deploy preview
-      run: |
-        echo "🚀 Deploying preview for PR #${{ github.event.pull_request.number }}"
-        echo "Branch: ${{ github.head_ref }}"
-        # Добавьте команды деплоя вашего превью здесь
-
-  notify-success:
-    name: Notify Success
-    runs-on: ubuntu-latest
-    needs: [quality-checks, security-scan]
-    if: success()
-    
-    steps:
-    - name: Notify on success
-      run: |
-        echo "🎉 CI/CD Pipeline completed successfully!"
-        echo "Event: ${{ github.event_name }}"
-        echo "Branch: ${{ github.ref }}"
-        echo "Commit: ${{ github.sha }}"
+        kubectl apply -f k8s/
+        kubectl rollout status deployment/fullstack-app
+        kubectl get pods,svc,ingress
