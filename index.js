@@ -4,10 +4,11 @@ const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.json({
-    message: '🚀 Fullstack Application Running in Kubernetes!',
+    message: '🚀 Fullstack Application from Docker Hub!',
+    version: process.env.npm_package_version || '1.0.0',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    hostname: process.env.HOSTNAME || 'localhost'
+    docker: true,
+    built_with: 'GitHub Actions'
   });
 });
 
@@ -19,15 +20,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/api/version', (req, res) => {
-  res.json({
-    version: '1.0.0',
-    ci_cd: 'GitHub Actions + Kind',
-    deployed_at: new Date().toISOString()
-  });
-});
-
 app.listen(port, () => {
-  console.log(`✅ Application running on port ${port}`);
-  console.log(`📡 Health endpoint: http://0.0.0.0:${port}/health`);
+  console.log(`✅ Server running on port ${port}`);
 });

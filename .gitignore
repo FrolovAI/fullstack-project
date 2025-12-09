@@ -1,0 +1,14 @@
+
+# Docker
+.dockerignore
+docker-compose*.yml
+.env
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
